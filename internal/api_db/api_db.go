@@ -6,7 +6,7 @@ import (
 )
 
 type UserApi interface {
-	CreateUser(model.UserItem, *reindexer.Reindexer) (uint64, error)
+	CreateUser(model.User, *reindexer.Reindexer) (uint64, error)
 	FindUser(login, password string) (model.UserItem, error)
 	FindUserById(id uint) (model.UserItem, error)
 	UpdatePasswordByLogin(login string) error

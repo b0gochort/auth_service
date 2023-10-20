@@ -15,7 +15,7 @@ func NewUserApi(db *reindexer.Reindexer) *UserApiImpl {
 	}
 }
 
-func (a *UserApiImpl) CreateUser(model.UserItem, *reindexer.Reindexer) (uint64, error) {
+func (a *UserApiImpl) CreateUser(model.User, *reindexer.Reindexer) (uint64, error) {
 	return 0, nil
 }
 
