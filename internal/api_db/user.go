@@ -15,8 +15,8 @@ func NewUserApi(db *reindexer.Reindexer) *UserApiImpl {
 	}
 }
 
-func (a *UserApiImpl) CreateUser(model.UserItem) (uint64, error) {
-	reind
+func (a *UserApiImpl) CreateUser(model.UserItem) (int64, error) {
+	// reind
 	return 0, nil
 }
 
@@ -24,7 +24,7 @@ func (a *UserApiImpl) FindUser(email, password string) (model.UserItem, error) {
 	return model.UserItem{}, nil
 }
 
-func (a *UserApiImpl) FindUserById(id uint) (model.UserItem, error) {
+func (a *UserApiImpl) FindUserById(id int64) (model.UserItem, error) {
 	return model.UserItem{}, nil
 }
 

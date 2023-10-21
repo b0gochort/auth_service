@@ -3,10 +3,13 @@ package serivce
 import (
 	"crypto/sha512"
 	"fmt"
+	"log/slog"
+	"time"
 	"unicode"
 
 	apidb "github.com/b0gochort/internal/api_db"
 	"github.com/b0gochort/internal/model"
+	"github.com/b0gochort/pkg"
 )
 
 type UserServiceImpl struct {
@@ -19,9 +22,10 @@ func NewUserService(userApiDB apidb.UserApi) *UserServiceImpl {
 	}
 }
 
-func (s *UserServiceImpl) SignUp(userReq model.User) (uint64, error) {
+func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 	if !verifyPassword(userReq.Password) {
-		return 0, fmt.Errorf("invalid password")
+		slog.Info("userService.SignUp.CreateUser: invalid password")
+		return model.Auth{}, fmt.Errorf("userService.SignUp :invalid password")
 	}
 
 	user := model.UserItem{
@@ -31,14 +35,26 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (uint64, error) {
 
 	userId, err := s.userApiDb.CreateUser(user)
 	if err != nil {
-		return 0, err
+		slog.Info("userService.SignUp.CreateUser: %s", err.Error())
+		return model.Auth{}, err
+	}
+	token, err := pkg.GenerateToken(userReq.Login, userId, time.Hour*1)
+	if err != nil {
+		slog.Info("userService.SignUp.GenerateToken: %s", err.Error())
+		return model.Auth{}, fmt.Errorf("userService.SignUp.GenerateToken: %s", err.Error())
 	}
 
-	return userId, nil
+	auth := model.Auth{
+		AccessToken: token,
+		Id:          userId,
+		Login:       userReq.Login,
+	}
+
+	return auth, nil
 }
 
-func (s *UserServiceImpl) LogIn(model.User) (model.Token, error) {
-	return model.Token{}, nil
+func (s *UserServiceImpl) Login(model.User) (model.Auth, error) {
+	return model.Auth{}, nil
 }
 
 func generatePasswordHash(password string) string {

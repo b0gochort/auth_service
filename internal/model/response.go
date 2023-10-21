@@ -8,11 +8,17 @@ type User struct {
 }
 
 type JwtCustomClaims struct {
-	Name         string `json:"name"`
-	RefreshToken string `json:"refresh_token"`
+	Login string `json:"name"`
+	Id    int64  `json:"id"`
 	jwt.RegisteredClaims
 }
 
 type Token struct {
 	AccessToken string `json:"accessToken"`
+}
+
+type Auth struct {
+	AccessToken string `json:"accessToken"`
+	Id          int64  `json:"id"`
+	Login       string `json:"login"`
 }

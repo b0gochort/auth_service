@@ -19,8 +19,13 @@ func NewHandler(services *serivce.Service) *Handler {
 }
 
 func (h *Handler) InitRoutes(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Content-Type", "application/json")
 	switch string(ctx.Path()) {
-	case "/ping":
+	case "/signup":
+		ping(ctx)
+	case "/login":
+		ping(ctx)
+	default:
 		ping(ctx)
 	}
 }

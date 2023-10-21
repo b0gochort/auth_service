@@ -6,8 +6,8 @@ import (
 )
 
 type UserService interface {
-	SignUp(user model.User) (uint64, error)
-	LogIn(user model.User) (model.Token, error)
+	SignUp(user model.User) (model.Auth, error)
+	Login(user model.User) (model.Auth, error)
 }
 
 type Service struct {
