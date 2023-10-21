@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/b0gochort/internal/serivce"
 	"github.com/valyala/fasthttp"
@@ -20,9 +21,10 @@ func NewHandler(services *serivce.Service) *Handler {
 
 func (h *Handler) InitRoutes(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.Set("Content-Type", "application/json")
+	start := time.Now()
 	switch string(ctx.Path()) {
 	case "/signup":
-		ping(ctx)
+		h.SignUp(ctx, start)
 	case "/login":
 		ping(ctx)
 	default:

@@ -20,12 +20,12 @@ func (a *UserApiImpl) CreateUser(model.UserItem) (int64, error) {
 	return 0, nil
 }
 
-func (a *UserApiImpl) FindUser(email, password string) (model.UserItem, error) {
-	return model.UserItem{}, nil
+func (a *UserApiImpl) GetUser(email, password string) (int64, error) {
+	return 0, nil
 }
 
-func (a *UserApiImpl) FindUserById(id int64) (model.UserItem, error) {
-	return model.UserItem{}, nil
+func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
+	return nil
 }
 
 func (a *UserApiImpl) UpdatePasswordByLogin(login string) error {

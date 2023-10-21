@@ -36,25 +36,48 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 	userId, err := s.userApiDb.CreateUser(user)
 	if err != nil {
 		slog.Info("userService.SignUp.CreateUser: %s", err.Error())
-		return model.Auth{}, err
+		return model.Auth{}, fmt.Errorf("userService.SignUp.CreateUser: %s", err.Error())
 	}
-	token, err := pkg.GenerateToken(userReq.Login, userId, time.Hour*1)
+	token, err := pkg.GenerateToken(userReq.Login, userId, time.Hour*8)
 	if err != nil {
 		slog.Info("userService.SignUp.GenerateToken: %s", err.Error())
 		return model.Auth{}, fmt.Errorf("userService.SignUp.GenerateToken: %s", err.Error())
 	}
 
-	auth := model.Auth{
+	return model.Auth{
 		AccessToken: token,
 		Id:          userId,
 		Login:       userReq.Login,
-	}
-
-	return auth, nil
+	}, nil
 }
 
-func (s *UserServiceImpl) Login(model.User) (model.Auth, error) {
-	return model.Auth{}, nil
+func (s *UserServiceImpl) FindUser(userReq model.User) (model.Auth, error) {
+	userId, err := s.userApiDb.GetUser(userReq.Login, userReq.Password)
+	if err != nil {
+		slog.Info("userService.Login.FindUser: %s", err.Error())
+		return model.Auth{}, err
+	}
+
+	token, err := pkg.GenerateToken(userReq.Login, userId, time.Hour*8)
+	if err != nil {
+		slog.Info("userService.Login.GenerateToken: %s", err.Error())
+		return model.Auth{}, fmt.Errorf("userService.Login.GenerateToken: %s", err.Error())
+	}
+
+	return model.Auth{
+		AccessToken: token,
+		Id:          userId,
+		Login:       userReq.Login,
+	}, nil
+}
+
+func (s *UserServiceImpl) UserExists(userId int64, login string) error {
+	if err := s.userApiDb.GetUserByIdAndLogin(userId, login); err != nil {
+		slog.Info("userService.AuthMiddleware.FindUserByIdAndLogin: %s", err.Error())
+		return fmt.Errorf("userService.Login.AuthMiddleware: %s", err.Error())
+	}
+
+	return nil
 }
 
 func generatePasswordHash(password string) string {
