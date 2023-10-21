@@ -4,6 +4,7 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"log/slog"
+	"net/mail"
 	"time"
 	"unicode"
 
@@ -26,6 +27,11 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 	if !verifyPassword(userReq.Password) {
 		slog.Info("userService.SignUp.CreateUser: invalid password")
 		return model.Auth{}, fmt.Errorf("userService.SignUp :invalid password")
+	}
+
+	if !verifyEmail(userReq.Email) {
+		slog.Info("userService.SignUp.CreateUser: invalid email")
+		return model.Auth{}, fmt.Errorf("userService.SignUp :invalid email")
 	}
 
 	user := model.UserItem{
@@ -119,4 +125,10 @@ func verifyPassword(s string) bool {
 	}
 	sevenOrMore = letters >= 7
 	return sevenOrMore && number && upper && special
+}
+
+func verifyEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+
+	return err == nil
 }

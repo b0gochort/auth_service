@@ -48,7 +48,7 @@ func (h *Handler) SignUp(ctx *fasthttp.RequestCtx, start time.Time) {
 
 	user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
 
-	geo, err := GetGeo(user.IP)
+	geo, err := getGeo(user.IP)
 	if err != nil {
 		slog.Info("handler.services.GetGeo:", err.Error())
 		response := model.ResponseError{
@@ -227,7 +227,7 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx) {
 
 }
 
-func GetGeo(ip string) (model.GeoResponse, error) {
+func getGeo(ip string) (model.GeoResponse, error) {
 	var result model.GeoResponse
 	c := &fasthttp.Client{
 		Dial: func(addr string) (net.Conn, error) {
