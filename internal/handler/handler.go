@@ -27,8 +27,11 @@ func (h *Handler) InitRoutes(ctx *fasthttp.RequestCtx) {
 		h.SignUp(ctx, start)
 	case "/login":
 		h.Login(ctx, start)
+
+	case "/user/update":
+
 	default:
-		ping(ctx)
+		h.AuthMiddleware(ctx, start)
 	}
 }
 

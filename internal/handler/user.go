@@ -176,7 +176,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 
 }
 
-func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx) {
+func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx, start time.Time) {
 	var accsessToken model.Token
 
 	err := json.Unmarshal(ctx.Request.Body(), &accsessToken)
@@ -202,7 +202,7 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx) {
 	token, err := jwt.ParseWithClaims(accsessToken.AccessToken,
 		claims,
 		func(token *jwt.Token) (interface{}, error) {
-			return "salt", nil
+			return []byte("salt"), nil
 		})
 	if err != nil || !token.Valid {
 		slog.Info("handler.AuthMidleware validation token: %s", err.Error())
@@ -225,6 +225,22 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("handler.AuthMiddleware.UserExists: %s", err.Error()), fasthttp.StatusInternalServerError)
 	}
 
+	response := model.ResponseSuccess{
+		Code:   fasthttp.StatusOK,
+		Result: "success",
+		Time:   time.Since(start).Nanoseconds(),
+	}
+
+	body, err := json.Marshal(response)
+	if err != nil {
+		slog.Info("hadnler.AuthMiddleware.Marshal: %s", err.Error())
+		ctx.Error(fmt.Sprintf("json.AuthMiddleware : %s", err.Error()), fasthttp.StatusInternalServerError)
+
+		return
+
+	}
+
+	ctx.Write(body)
 }
 
 func getGeo(ip string) (model.GeoResponse, error) {

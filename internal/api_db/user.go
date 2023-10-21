@@ -58,6 +58,22 @@ func (a *UserApiImpl) GetUser(email, password string) (int64, string, error) {
 }
 
 func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
+	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	elem, ok := a.db.Query("users").Where("login", reindexer.EQ, login).And().Where("id", reindexer.EQ, id).GetJson()
+	if !ok {
+		return fmt.Errorf("no users with email: %s", login)
+	}
+
+	var user model.UserItem
+
+	if err = json.Unmarshal(elem, &user); err != nil {
+		return err
+	}
+
 	return nil
 }
 
