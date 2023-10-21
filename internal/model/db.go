@@ -22,3 +22,10 @@ type DateType struct {
 	Update int64 `json:"update" reindex:"update,tree"`
 	Create int64 `json:"create" reindex:"create,tree"`
 }
+
+type EmailItem struct {
+	Id    int64  `json:"id" reindex:"id,,pk"`
+	Code  string `json:"code" reindex:"code,hash"`
+	Email string `json:"email" reindex:"email,hash"`
+	Time  int64  `json:"time" reindex:"time,ttl,expire_after=3600"`
+}

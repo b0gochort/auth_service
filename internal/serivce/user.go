@@ -2,16 +2,23 @@ package serivce
 
 import (
 	"crypto/sha512"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net/mail"
 	"time"
 	"unicode"
 
+	"github.com/spf13/viper"
+
+	gomail "gopkg.in/mail.v2"
+
 	apidb "github.com/b0gochort/internal/api_db"
 	"github.com/b0gochort/internal/model"
 	"github.com/b0gochort/pkg"
 )
+
+const ConfirmationCodeLifetime = 1 * time.Hour
 
 type UserServiceImpl struct {
 	userApiDb apidb.UserApi
@@ -86,12 +93,82 @@ func (s *UserServiceImpl) FindUser(userReq model.User) (model.Auth, error) {
 	}, nil
 }
 
+type EmailMessage struct {
+	Email   string
+	Subject string
+	Message string
+	Path    string
+}
+
+func (s *UserServiceImpl) SendConfirmationEmail(email string) (int64, error) {
+	verification := model.EmailItem{
+		Email: email,
+		Code:  pkg.GenerateCode(),
+		Time:  time.Now().Unix(),
+	}
+
+	emailMessage := EmailMessage{
+		Email:   verification.Email,
+		Subject: "Subject: Код подтверждения\n",
+		Message: verification.Code,
+	}
+	err := emailMessage.sendEmail()
+	if err != nil {
+		slog.Info("userService.SendConfirmationEmail.sendEmal: %s", err.Error())
+		return 0, err
+	}
+
+	codeId, err := s.userApiDb.CreateVerification(verification)
+	if err != nil {
+		return 0, err
+	}
+
+	return codeId, nil
+}
+
+func (s UserServiceImpl) VerificateEmailCode(code, email string) error {
+	res, err := s.userApiDb.VerificationCode(email)
+	if err != nil {
+		slog.Info("userService.VerificateEmailCode.FindUserByIdAndLogin: %s", err.Error())
+		return fmt.Errorf("userService.Login.VerificateEmailCode: %s", err.Error())
+	}
+
+	if res.Code != code {
+		return fmt.Errorf("invalid code, repeat")
+	}
+
+	return nil
+}
+
 func (s *UserServiceImpl) UserExists(userId int64, login string) error {
 	if err := s.userApiDb.GetUserByIdAndLogin(userId, login); err != nil {
 		slog.Info("userService.AuthMiddleware.FindUserByIdAndLogin: %s", err.Error())
 		return fmt.Errorf("userService.Login.AuthMiddleware: %s", err.Error())
 	}
 
+	return nil
+}
+
+func (e EmailMessage) sendEmail() error {
+	m := gomail.NewMessage()
+
+	m.SetHeader("From", viper.GetString("email.from"))
+
+	m.SetHeader("To", e.Email)
+
+	m.SetHeader("Subject", e.Subject)
+
+	m.SetBody("text/plain", fmt.Sprintf("code is %s", e.Message))
+
+	fmt.Println(viper.GetString("email.smtp_host"), viper.GetInt("email.smtp_port"), viper.GetString("email.from"), viper.GetString("email.password"))
+
+	d := gomail.NewDialer(viper.GetString("email.smtp_host"), viper.GetInt("email.smtp_port"), viper.GetString("email.from"), viper.GetString("email.pass"))
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		slog.Info(err.Error())
+		return err
+	}
 	return nil
 }
 

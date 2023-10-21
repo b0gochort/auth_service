@@ -10,6 +10,8 @@ type UserApi interface {
 	GetUser(email, password string) (int64, string, error)
 	GetUserByIdAndLogin(id int64, login string) error
 	UpdatePasswordByLogin(login string) error
+	CreateVerification(verification model.EmailItem) (int64, error)
+	VerificationCode(email) (model.EmailItem, error)
 }
 
 type ApiDB struct {

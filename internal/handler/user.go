@@ -140,6 +140,31 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 		return
 	}
 
+	user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
+
+	geo, err := getGeo(user.IP)
+	if err != nil {
+		slog.Info("handler.services.GetGeo:", err.Error())
+		response := model.ResponseError{
+			Code:        fasthttp.StatusInternalServerError,
+			Description: "handler.services.GetGeo",
+			Error:       err,
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+	}
+
+	position := [2]float64{geo.Latitude, geo.Longitude}
+
+	user.Position[0] = position[0]
+	user.Position[1] = position[1]
+
+	user.Date.Create = time.Now().Unix()
+	user.Date.Update = time.Now().Unix()
+
 	auth, err := h.services.FindUser(user)
 	if err != nil {
 		slog.Info("handler.services.Login: %s", err.Error())
@@ -221,7 +246,7 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx, start time.Time) {
 	}
 
 	if err = h.services.UserService.UserExists(claims.Id, claims.Login); err != nil {
-		slog.Info("handler.AuthMiddleware: %s", err.Error())
+		slog.Info("handler.AuthMiddleware: ", err.Error())
 		ctx.Error(fmt.Sprintf("handler.AuthMiddleware.UserExists: %s", err.Error()), fasthttp.StatusInternalServerError)
 	}
 
@@ -233,7 +258,7 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx, start time.Time) {
 
 	body, err := json.Marshal(response)
 	if err != nil {
-		slog.Info("hadnler.AuthMiddleware.Marshal: %s", err.Error())
+		slog.Info("hadnler.AuthMiddleware.Marshal:", err.Error())
 		ctx.Error(fmt.Sprintf("json.AuthMiddleware : %s", err.Error()), fasthttp.StatusInternalServerError)
 
 		return
@@ -242,6 +267,165 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx, start time.Time) {
 
 	ctx.Write(body)
 }
+
+func (h *Handler) ActivateAuthByEmail(ctx *fasthttp.RequestCtx, start time.Time) {
+	if string(ctx.Method()) != "POST" {
+		slog.Info("handler.Login: unsaporrted unsupported method")
+		response := model.ResponseError{
+			Code:        fasthttp.StatusMethodNotAllowed,
+			Description: "unsaporrted unsupported method",
+			Error:       fmt.Errorf("method not allowed"),
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+
+		return
+	}
+
+	var user model.User
+
+	if err := json.Unmarshal(ctx.Request.Body(), &user); err != nil {
+		slog.Info("handler.unmarshal: %s", err.Error())
+		response := model.ResponseError{
+			Code:        fasthttp.StatusUnprocessableEntity,
+			Description: "handler.unmarshal",
+			Error:       err,
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+
+		return
+	}
+
+	idCode, err := h.services.SendConfirmationEmail(user.Email)
+	if err != nil {
+		slog.Info("handler.SendConfirmationEmail: %s", err.Error())
+		response := model.ResponseError{
+			Code:        fasthttp.StatusInternalServerError,
+			Description: "handler.SendConfirmationEmail",
+			Error:       err,
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+
+		return
+	}
+
+	response := model.ResponseSuccess{
+		Code:   fasthttp.StatusOK,
+		Result: idCode,
+		Time:   time.Since(start).Nanoseconds(),
+	}
+
+	body, err := json.Marshal(response)
+	if err != nil {
+		slog.Info("hadnler.AuthMiddleware.Marshal:", err.Error())
+		ctx.Error(fmt.Sprintf("json.AuthMiddleware : %s", err.Error()), fasthttp.StatusInternalServerError)
+
+		return
+
+	}
+
+	ctx.Write(body)
+}
+
+func (h *Handler) VerificationCode(ctx *fasthttp.RequestCtx, start time.Time) {
+	if string(ctx.Method()) != "POST" {
+		slog.Info("handler.Login: unsaporrted unsupported method")
+		response := model.ResponseError{
+			Code:        fasthttp.StatusMethodNotAllowed,
+			Description: "unsaporrted unsupported method",
+			Error:       fmt.Errorf("method not allowed"),
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+
+		return
+	}
+
+	var user model.Verification
+
+	if err := json.Unmarshal(ctx.Request.Body(), &user); err != nil {
+		slog.Info("handler.unmarshal: %s", err.Error())
+		response := model.ResponseError{
+			Code:        fasthttp.StatusUnprocessableEntity,
+			Description: "handler.unmarshal",
+			Error:       err,
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+
+		return
+	}
+
+	err := h.services.UserService.VerificateEmailCode(user.Code, user.Email)
+	if err != nil {
+		slog.Info("handler.VerificateEmailCode: %s", err.Error())
+		response := model.ResponseError{
+			Code:        fasthttp.StatusInternalServerError,
+			Description: "handler.VerificateEmailCode",
+			Error:       err,
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+
+		return
+	}
+
+	response := model.ResponseSuccess{
+		Code:   fasthttp.StatusOK,
+		Result: "success",
+		Time:   time.Since(start).Nanoseconds(),
+	}
+
+	body, err := json.Marshal(response)
+	if err != nil {
+		slog.Info("hadnler.AuthMiddleware.Marshal:", err.Error())
+		ctx.Error(fmt.Sprintf("json.AuthMiddleware : %s", err.Error()), fasthttp.StatusInternalServerError)
+
+		return
+
+	}
+
+	ctx.Write(body)
+
+}
+
+// func (h *Handler) UpdateUser(ctx *fasthttp.RequestCtx, start time.Time) {
+// 	if string(ctx.Method()) != "POST" {
+// 		slog.Info("handler.UpdateUser: unsupported method")
+// 		response := model.ResponseError{
+// 			Code:        fasthttp.StatusMethodNotAllowed,
+// 			Description: "unsupported method",
+// 			Error:       fmt.Errorf("method not allowed"),
+// 		}
+// 		body, err := json.Marshal(&response)
+// 		if err != nil {
+// 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+// 		}
+// 		ctx.Write(body)
+
+// 		return
+// 	}
+// }
 
 func getGeo(ip string) (model.GeoResponse, error) {
 	var result model.GeoResponse

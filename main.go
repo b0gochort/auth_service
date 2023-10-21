@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
+	"log"
 
 	apidb "github.com/b0gochort/internal/api_db"
 	"github.com/b0gochort/internal/handler"
@@ -14,6 +16,19 @@ import (
 var db = reindexer.NewReindex("cproto://rx.web-gen.ru:6534/tinkoff")
 
 func main() {
+
+	viper.SetConfigFile("./config.yaml")
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("error reading config; %s", err.Error())
+	}
+
+	type EmailConfig struct {
+		From     string
+		Password string
+		SMTPHost string
+		SMTPPort string
+	}
+
 	db := reindexer.NewReindex("cproto://rx.web-gen.ru:6534/tinkoff")
 	if db.Status().Err != nil {
 		panic(db.Status().Err)

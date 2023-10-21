@@ -65,7 +65,7 @@ func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
 
 	elem, ok := a.db.Query("users").Where("login", reindexer.EQ, login).And().Where("id", reindexer.EQ, id).GetJson()
 	if !ok {
-		return fmt.Errorf("no users with email: %s", login)
+		return fmt.Errorf("no users with login: %s", login)
 	}
 
 	var user model.UserItem
@@ -75,6 +75,43 @@ func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
 	}
 
 	return nil
+}
+
+func (a *UserApiImpl) VerificationCode(email string) (model.EmailItem, error) {
+	err := a.db.OpenNamespace("codes", reindexer.DefaultNamespaceOptions(), model.EmailItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	elem, ok := a.db.Query("codes").Where("email", reindexer.EQ, email).GetJson()
+	if !ok {
+		return model.EmailItem{}, fmt.Errorf("no users with email: %s", email)
+	}
+
+	var verification model.EmailItem
+
+	if err = json.Unmarshal(elem, &verification); err != nil {
+		return model.EmailItem{}, err
+	}
+
+	return verification, nil
+}
+
+func (a *UserApiImpl) CreateVerification(verification model.EmailItem) (int64, error) {
+	err := a.db.OpenNamespace("codes", reindexer.DefaultNamespaceOptions(), model.EmailItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ok, err := a.db.Insert("codes", &verification, "id=serial()")
+	if err != nil {
+		return 0, err
+	}
+
+	if ok == 0 {
+		return 0, fmt.Errorf("nil insert")
+	}
+	return verification.Id, nil
 }
 
 func (a *UserApiImpl) UpdatePasswordByLogin(login string) error {

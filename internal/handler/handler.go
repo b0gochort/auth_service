@@ -27,8 +27,11 @@ func (h *Handler) InitRoutes(ctx *fasthttp.RequestCtx) {
 		h.SignUp(ctx, start)
 	case "/login":
 		h.Login(ctx, start)
+	case "/auth":
+		h.ActivateAuthByEmail(ctx, start)
+	case "/code":
 
-	case "/user/update":
+	// case "/user/update":
 
 	default:
 		h.AuthMiddleware(ctx, start)
