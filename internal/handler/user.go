@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"time"
 
 	"github.com/b0gochort/internal/model"
@@ -12,9 +13,8 @@ import (
 )
 
 func (h *Handler) SignUp(ctx *fasthttp.RequestCtx, start time.Time) {
-
 	if string(ctx.Method()) != "POST" {
-		slog.Info("handler.SingUp: unsaporrted unsupported method")
+		slog.Info("handler.SingUp: unsupported method")
 		response := model.ResponseError{
 			Code:        fasthttp.StatusMethodNotAllowed,
 			Description: "unsaporrted unsupported method",
@@ -25,6 +25,7 @@ func (h *Handler) SignUp(ctx *fasthttp.RequestCtx, start time.Time) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 	var user model.User
@@ -41,12 +42,38 @@ func (h *Handler) SignUp(ctx *fasthttp.RequestCtx, start time.Time) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 
+	user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
+
+	geo, err := GetGeo(user.IP)
+	if err != nil {
+		slog.Info("handler.services.GetGeo:", err.Error())
+		response := model.ResponseError{
+			Code:        fasthttp.StatusInternalServerError,
+			Description: "handler.services.GetGeo",
+			Error:       err,
+		}
+		body, err := json.Marshal(&response)
+		if err != nil {
+			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+		}
+		ctx.Write(body)
+	}
+
+	position := [2]float64{geo.Latitude, geo.Longitude}
+
+	user.Position[0] = position[0]
+	user.Position[1] = position[1]
+
+	user.Date.Create = time.Now().Unix()
+	user.Date.Update = time.Now().Unix()
+
 	auth, err := h.services.UserService.SignUp(user)
 	if err != nil {
-		slog.Info("handler.services.UserService: %s", err.Error())
+		slog.Info("handler.services.UserService:", err.Error())
 		response := model.ResponseError{
 			Code:        fasthttp.StatusInternalServerError,
 			Description: "handler.services.UserService",
@@ -57,6 +84,7 @@ func (h *Handler) SignUp(ctx *fasthttp.RequestCtx, start time.Time) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 
@@ -90,6 +118,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 
@@ -107,6 +136,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 
@@ -123,6 +153,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 
@@ -162,6 +193,7 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 
@@ -184,6 +216,7 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx) {
 			ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
 		}
 		ctx.Write(body)
+
 		return
 	}
 
@@ -192,4 +225,26 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fmt.Sprintf("handler.AuthMiddleware.UserExists: %s", err.Error()), fasthttp.StatusInternalServerError)
 	}
 
+}
+
+func GetGeo(ip string) (model.GeoResponse, error) {
+	var result model.GeoResponse
+	c := &fasthttp.Client{
+		Dial: func(addr string) (net.Conn, error) {
+			return fasthttp.DialTimeout(addr, time.Second*10)
+		},
+		MaxConnsPerHost: 1,
+	}
+	code, body, err := c.Get(nil, fmt.Sprintf("http://free.ipwhois.io/json/%s", ip))
+	if err != nil {
+		return model.GeoResponse{}, err
+	}
+	if code != 200 {
+		return model.GeoResponse{}, fmt.Errorf("something wrong, status code: %d", code)
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return model.GeoResponse{}, err
+	}
+
+	return result, nil
 }

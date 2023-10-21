@@ -29,8 +29,17 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 	}
 
 	user := model.UserItem{
-		Login:    userReq.Login,
-		Password: generatePasswordHash(userReq.Password),
+		Name:       userReq.Name,
+		Surname:    userReq.Surname,
+		Patronymic: userReq.Patronymic,
+		Login:      userReq.Login,
+		Password:   generatePasswordHash(userReq.Password),
+		Email:      userReq.Email,
+		IP:         userReq.IP,
+		Birthday:   userReq.Birthday,
+		City:       userReq.City,
+		Date:       userReq.Date,
+		Position:   userReq.Position,
 	}
 
 	userId, err := s.userApiDb.CreateUser(user)
@@ -94,11 +103,14 @@ func verifyPassword(s string) bool {
 		switch {
 		case unicode.IsNumber(c):
 			number = true
+			letters++
 		case unicode.IsUpper(c):
 			upper = true
 			letters++
 		case unicode.IsPunct(c) || unicode.IsSymbol(c):
 			special = true
+			letters++
+
 		case unicode.IsLetter(c) || c == ' ':
 			letters++
 		default:

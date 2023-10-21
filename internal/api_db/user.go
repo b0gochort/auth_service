@@ -1,6 +1,9 @@
 package apidb
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/b0gochort/internal/model"
 	"github.com/restream/reindexer/v3"
 )
@@ -15,9 +18,22 @@ func NewUserApi(db *reindexer.Reindexer) *UserApiImpl {
 	}
 }
 
-func (a *UserApiImpl) CreateUser(model.UserItem) (int64, error) {
-	// reind
-	return 0, nil
+func (a *UserApiImpl) CreateUser(user model.UserItem) (int64, error) {
+	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ok, err := a.db.Insert("users", &user, "id=serial()")
+	if err != nil {
+		return 0, err
+	}
+
+	if ok == 0 {
+		return 0, fmt.Errorf("nil insert")
+	}
+
+	return user.ID, nil
 }
 
 func (a *UserApiImpl) GetUser(email, password string) (int64, error) {

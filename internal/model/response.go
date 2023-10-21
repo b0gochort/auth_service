@@ -5,11 +5,23 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/restream/reindexer/v3"
 )
 
 type User struct {
-	Login    string `json:"username"`
-	Password string `json:"password"`
+	ID            int64           `json:"id"`
+	Name          string          `json:"name"`
+	Surname       string          `json:"surname"`
+	Patronymic    string          `json:"patronymic"`
+	Email         string          `json:"email"`
+	Authenticated bool            `json:"authenticated"`
+	Login         string          `json:"login"`
+	Password      string          `json:"password"`
+	IP            string          `json:"ip"`
+	Birthday      int64           `json:"birthday"`
+	City          string          `json:"city"`
+	Position      reindexer.Point `json:"position"`
+	Date          DateType        `json:"date"`
 }
 
 type JwtCustomClaims struct {
@@ -47,4 +59,9 @@ func (c *JwtCustomClaims) Valid() error {
 	}
 
 	return nil
+}
+
+type GeoResponse struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
