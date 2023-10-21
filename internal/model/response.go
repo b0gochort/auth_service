@@ -13,6 +13,6 @@ type JwtCustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-type Tokens struct {
+type Token struct {
 	AccessToken string `json:"accessToken"`
 }

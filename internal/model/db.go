@@ -1,9 +1,9 @@
 package model
 
 type UserItem struct {
-	id       int64  `reindex:"id,hash,pk"`
-	login    string `reindex:"login,hash"`
-	password string `reindex:"password,hash"`
-	ip       string `reindex:"ip,hash"`
-	date     int64  `reindex:"date,tree"`
+	ID       int64  `json:"id" reindex:"id,hash,pk"`
+	Login    string `json:"login" reindex:"login,hash"`
+	Password string `json:"password" reindex:"password,hash"`
+	IP       string `json:"ip" reindex:"ip,hash"`
+	Date     int64  `json:"date" reindex:"date,tree"`
 }
