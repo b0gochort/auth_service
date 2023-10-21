@@ -26,7 +26,7 @@ func (h *Handler) InitRoutes(ctx *fasthttp.RequestCtx) {
 	case "/signup":
 		h.SignUp(ctx, start)
 	case "/login":
-		ping(ctx)
+		h.Login(ctx, start)
 	default:
 		ping(ctx)
 	}

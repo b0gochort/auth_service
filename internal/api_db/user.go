@@ -1,6 +1,7 @@
 package apidb
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -36,8 +37,24 @@ func (a *UserApiImpl) CreateUser(user model.UserItem) (int64, error) {
 	return user.ID, nil
 }
 
-func (a *UserApiImpl) GetUser(email, password string) (int64, error) {
-	return 0, nil
+func (a *UserApiImpl) GetUser(email, password string) (int64, string, error) {
+	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	elem, ok := a.db.Query("users").Where("email", reindexer.EQ, email).And().Where("password", reindexer.EQ, password).GetJson()
+	if !ok {
+		return 0, "", fmt.Errorf("no users with email: %s", email)
+	}
+
+	var user model.UserItem
+
+	if err = json.Unmarshal(elem, &user); err != nil {
+		return 0, "", err
+	}
+
+	return user.ID, user.Login, nil
 }
 
 func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
