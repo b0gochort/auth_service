@@ -37,14 +37,14 @@ func (a *UserApiImpl) CreateUser(user model.UserItem) (int64, error) {
 	return user.ID, nil
 }
 
-func (a *UserApiImpl) GetUser(email, password string) (model.UserItem, error) {
+func (a *UserApiImpl) GetUser(email, password, login string) (model.UserItem, error) {
 	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
 
 	if err != nil && err.Error() != "rq: Namespace is already exists" {
 		log.Fatal(err)
 	}
 
-	elem, ok := a.db.Query("users").Where("email", reindexer.EQ, email).And().Where("password", reindexer.EQ, password).GetJson()
+	elem, ok := a.db.Query("users").Where("email", reindexer.EQ, email).Or().Where("login", reindexer.EQ, login).Where("password", reindexer.EQ, password).GetJson()
 	if !ok {
 		return model.UserItem{}, fmt.Errorf("no users with email: %s", email)
 	}

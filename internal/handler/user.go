@@ -173,7 +173,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 		if err != nil {
 			slog.Info("handler.services.Login: %s", err.Error())
 			response := model.ResponseError{
-				Code:        fasthttp.StatusInternalServerError,
+				Code:        fasthttp.StatusNotFound,
 				Description: "handler.services.UserService",
 				Error:       err,
 			}

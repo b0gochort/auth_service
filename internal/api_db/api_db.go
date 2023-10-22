@@ -7,7 +7,7 @@ import (
 
 type UserApi interface {
 	CreateUser(user model.UserItem) (int64, error)
-	GetUser(email, password string) (model.UserItem, error)
+	GetUser(email, login, password string) (model.UserItem, error)
 	UpdateUser(user model.UserItem) error
 	GetUserByIdAndLogin(id int64, login string) error
 	UpdatePasswordByLogin(login string) error
