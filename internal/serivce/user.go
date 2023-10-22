@@ -74,13 +74,32 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 }
 
 func (s *UserServiceImpl) FindUser(userReq model.User) (model.Auth, error) {
-	userId, login, err := s.userApiDb.GetUser(userReq.Email, generatePasswordHash(userReq.Password))
+	user, err := s.userApiDb.GetUser(userReq.Email, generatePasswordHash(userReq.Password))
 	if err != nil {
 		slog.Info("userService.Login.FindUser: %s", err.Error())
 		return model.Auth{}, err
 	}
 
-	token, err := pkg.GenerateToken(userReq.Login, userId, time.Hour*8)
+	userNew := model.UserItem{
+		Name:       userReq.Name,
+		Surname:    userReq.Surname,
+		Patronymic: userReq.Patronymic,
+		Login:      userReq.Login,
+		Password:   generatePasswordHash(userReq.Password),
+		Email:      userReq.Email,
+		IP:         userReq.IP,
+		Birthday:   userReq.Birthday,
+		City:       userReq.City,
+		Date:       userReq.Date,
+		Position:   userReq.Position,
+	}
+
+	if err := s.userApiDb.UpdateUser(userNew); err != nil {
+		slog.Info("userService.Login.UpdateUser: %s", err.Error())
+		return model.Auth{}, err
+	}
+
+	token, err := pkg.GenerateToken(user.Login, user.ID, time.Hour*8)
 	if err != nil {
 		slog.Info("userService.Login.GenerateToken: %s", err.Error())
 		return model.Auth{}, fmt.Errorf("userService.Login.GenerateToken: %s", err.Error())
@@ -88,8 +107,8 @@ func (s *UserServiceImpl) FindUser(userReq model.User) (model.Auth, error) {
 
 	return model.Auth{
 		AccessToken: token,
-		Id:          userId,
-		Login:       login,
+		Id:          user.ID,
+		Login:       user.Login,
 	}, nil
 }
 
@@ -120,6 +139,7 @@ func (s *UserServiceImpl) SendConfirmationEmail(email string) (int64, error) {
 
 	codeId, err := s.userApiDb.CreateVerification(verification)
 	if err != nil {
+		slog.Info("userService.SendConfirmationEmail.CreateVerification: %s", err.Error())
 		return 0, err
 	}
 
@@ -137,6 +157,11 @@ func (s UserServiceImpl) VerificateEmailCode(code, email string) error {
 		return fmt.Errorf("invalid code, repeat")
 	}
 
+	if err := s.userApiDb.SetAuth(email); err != nil {
+		slog.Info("userService.VerificateEmailCode.SetAuth: %s", err.Error())
+		return err
+	}
+
 	return nil
 }
 
@@ -146,6 +171,18 @@ func (s *UserServiceImpl) UserExists(userId int64, login string) error {
 		return fmt.Errorf("userService.Login.AuthMiddleware: %s", err.Error())
 	}
 
+	return nil
+}
+
+func (s *UserServiceImpl) CheckUserAuth(email string) error {
+	user, err := s.userApiDb.CheckAuth(email)
+	if err != nil {
+		slog.Info("userService.VerificateEmailCode.ChechUserAuth: %s", err.Error())
+		return err
+	}
+	if user.Authenticated != 1 {
+		return fmt.Errorf("without 2fa")
+	}
 	return nil
 }
 

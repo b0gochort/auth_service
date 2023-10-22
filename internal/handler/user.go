@@ -140,6 +140,72 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 		return
 	}
 
+	if err := h.services.CheckUserAuth(user.Email); err != nil {
+		auth := model.Auth{
+			Auht: false,
+		}
+		user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
+
+		geo, err := getGeo(user.IP)
+		if err != nil {
+			slog.Info("handler.services.GetGeo:", err.Error())
+			response := model.ResponseError{
+				Code:        fasthttp.StatusInternalServerError,
+				Description: "handler.services.GetGeo",
+				Error:       err,
+			}
+			body, err := json.Marshal(&response)
+			if err != nil {
+				ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+			}
+			ctx.Write(body)
+		}
+
+		position := [2]float64{geo.Latitude, geo.Longitude}
+
+		user.Position[0] = position[0]
+		user.Position[1] = position[1]
+
+		user.Date.Create = time.Now().Unix()
+		user.Date.Update = time.Now().Unix()
+
+		auth, err = h.services.FindUser(user)
+		if err != nil {
+			slog.Info("handler.services.Login: %s", err.Error())
+			response := model.ResponseError{
+				Code:        fasthttp.StatusInternalServerError,
+				Description: "handler.services.UserService",
+				Error:       err,
+			}
+			body, err := json.Marshal(&response)
+			if err != nil {
+				ctx.Error("json.Marshal", fasthttp.StatusInternalServerError)
+			}
+			ctx.Write(body)
+
+			return
+		}
+
+		response := model.ResponseSuccess{
+			Code:   fasthttp.StatusOK,
+			Result: auth,
+			Time:   time.Since(start).Nanoseconds(),
+		}
+
+		body, err := json.Marshal(response)
+		if err != nil {
+			slog.Info("hadnler.Login.Marshal: %s", err.Error())
+			ctx.Error(fmt.Sprintf("json.Login : %s", err.Error()), fasthttp.StatusInternalServerError)
+
+			return
+
+		}
+
+		ctx.Write(body)
+	}
+	auth := model.Auth{
+		Auht: true,
+	}
 	user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
 
 	geo, err := getGeo(user.IP)
@@ -165,7 +231,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 	user.Date.Create = time.Now().Unix()
 	user.Date.Update = time.Now().Unix()
 
-	auth, err := h.services.FindUser(user)
+	auth, err = h.services.FindUser(user)
 	if err != nil {
 		slog.Info("handler.services.Login: %s", err.Error())
 		response := model.ResponseError{

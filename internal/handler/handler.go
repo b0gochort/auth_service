@@ -30,6 +30,7 @@ func (h *Handler) InitRoutes(ctx *fasthttp.RequestCtx) {
 	case "/auth":
 		h.ActivateAuthByEmail(ctx, start)
 	case "/code":
+		h.VerificationCode(ctx, start)
 
 	// case "/user/update":
 

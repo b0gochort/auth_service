@@ -12,6 +12,7 @@ type UserService interface {
 	// AuthByEmail(userId int64, login string) error
 	SendConfirmationEmail(email string) (int64, error)
 	VerificateEmailCode(code, email string) error
+	CheckUserAuth(email string) error
 }
 
 type Service struct {

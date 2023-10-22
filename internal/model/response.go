@@ -38,6 +38,7 @@ type Auth struct {
 	AccessToken string `json:"accessToken"`
 	Id          int64  `json:"id"`
 	Login       string `json:"login"`
+	Auht        bool   `json:"auth"`
 }
 
 type ResponseSuccess struct {

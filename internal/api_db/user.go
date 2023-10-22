@@ -37,7 +37,7 @@ func (a *UserApiImpl) CreateUser(user model.UserItem) (int64, error) {
 	return user.ID, nil
 }
 
-func (a *UserApiImpl) GetUser(email, password string) (int64, string, error) {
+func (a *UserApiImpl) GetUser(email, password string) (model.UserItem, error) {
 	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
 	if err != nil {
 		log.Fatal(err)
@@ -45,16 +45,32 @@ func (a *UserApiImpl) GetUser(email, password string) (int64, string, error) {
 
 	elem, ok := a.db.Query("users").Where("email", reindexer.EQ, email).And().Where("password", reindexer.EQ, password).GetJson()
 	if !ok {
-		return 0, "", fmt.Errorf("no users with email: %s", email)
+		return model.UserItem{}, fmt.Errorf("no users with email: %s", email)
 	}
 
 	var user model.UserItem
 
 	if err = json.Unmarshal(elem, &user); err != nil {
-		return 0, "", err
+		return model.UserItem{}, fmt.Errorf("unmarshall")
 	}
 
-	return user.ID, user.Login, nil
+	return user, nil
+}
+
+func (a *UserApiImpl) UpdateUser(user model.UserItem) (model.UserItem, error) {
+	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	elem := a.db.Query("users").Where("id", reindexer.EQ, user.ID).And().Update()
+
+	if elem.Error() != nil {
+		return model.UserItem{}, fmt.Errorf("faild update", elem.Error())
+	}
+
+	return nil
+
 }
 
 func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
@@ -111,7 +127,45 @@ func (a *UserApiImpl) CreateVerification(verification model.EmailItem) (int64, e
 	if ok == 0 {
 		return 0, fmt.Errorf("nil insert")
 	}
+
 	return verification.Id, nil
+}
+
+func (a *UserApiImpl) SetAuth(email string) error {
+	err := a.db.OpenNamespace("codes", reindexer.DefaultNamespaceOptions(), model.EmailItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	elems := a.db.Query("codes").Where("email", reindexer.EQ, email).Set("Authenticated", true).Update()
+
+	if elems.Error() != nil {
+		return fmt.Errorf("faild update", elems.Error())
+	}
+
+	return nil
+}
+
+func (a *UserApiImpl) CheckAuth(email string) (model.UserItem, error) {
+	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.EmailItem{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	elem, ok := a.db.Query("users").Where("email", reindexer.EQ, email).GetJson()
+
+	if !ok {
+		return model.UserItem{}, fmt.Errorf("no users with email: %s", email)
+	}
+
+	var user model.UserItem
+
+	if err = json.Unmarshal(elem, &user); err != nil {
+		return model.UserItem{}, err
+	}
+
+	return user, nil
+
 }
 
 func (a *UserApiImpl) UpdatePasswordByLogin(login string) error {
