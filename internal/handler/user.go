@@ -47,7 +47,7 @@ func (h *Handler) SignUp(ctx *fasthttp.RequestCtx, start time.Time) {
 	}
 
 	user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
-
+	fmt.Println(user.IP)
 	geo, err := getGeo(user.IP)
 	if err != nil {
 		slog.Info("handler.services.GetGeo:", err.Error())
