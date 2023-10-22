@@ -74,7 +74,7 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 }
 
 func (s *UserServiceImpl) FindUser(userReq model.User) (model.Auth, error) {
-	user, err := s.userApiDb.GetUser(userReq.Email, generatePasswordHash(userReq.Password))
+	user, err := s.userApiDb.GetUser(userReq.Email, userReq.Login, generatePasswordHash(userReq.Password))
 	if err != nil {
 		slog.Info("userService.Login.FindUser: %s", err.Error())
 		return model.Auth{}, err
