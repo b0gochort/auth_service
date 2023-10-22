@@ -46,7 +46,7 @@ func main() {
 	// Слушаем порт 8080 и обрабатываем запросы
 
 	fmt.Println("ok")
-	err := server.ListenAndServe(":3301")
+	err := server.ListenAndServe(":3305")
 	if err != nil {
 		fmt.Println("Ошибка при запуске сервера:", err)
 	}
