@@ -6,10 +6,10 @@ import (
 )
 
 type UserApi interface {
-	CreateUser(user model.UserItem) (int64, error)
+	CreateUser(user model.UserItem) (model.UserItem, error)
 	GetUser(email, login, password string) (model.UserItem, error)
 	UpdateUser(user model.UserItem) error
-	GetUserByIdAndLogin(id int64, login string) error
+	GetUserByIdAndLogin(id int64, login string) (model.UserItem, error)
 	UpdatePasswordByLogin(login string) error
 	CreateVerification(verification model.EmailItem) (int64, error)
 	VerificationCode(email string) (model.EmailItem, error)

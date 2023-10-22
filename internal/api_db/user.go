@@ -19,7 +19,7 @@ func NewUserApi(db *reindexer.Reindexer) *UserApiImpl {
 	}
 }
 
-func (a *UserApiImpl) CreateUser(user model.UserItem) (int64, error) {
+func (a *UserApiImpl) CreateUser(user model.UserItem) (model.UserItem, error) {
 	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
 	if err != nil {
 		log.Fatal(err)
@@ -27,14 +27,14 @@ func (a *UserApiImpl) CreateUser(user model.UserItem) (int64, error) {
 
 	ok, err := a.db.Insert("users", &user, "id=serial()")
 	if err != nil {
-		return 0, err
+		return model.UserItem{}, err
 	}
 
 	if ok == 0 {
-		return 0, fmt.Errorf("nil insert")
+		return model.UserItem{}, fmt.Errorf("nil insert")
 	}
 
-	return user.ID, nil
+	return user, nil
 }
 
 func (a *UserApiImpl) GetUser(email, password, login string) (model.UserItem, error) {
@@ -74,7 +74,7 @@ func (a *UserApiImpl) UpdateUser(user model.UserItem) error {
 
 }
 
-func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
+func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) (model.UserItem, error) {
 	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
 	if err != nil {
 		log.Fatal(err)
@@ -82,16 +82,16 @@ func (a *UserApiImpl) GetUserByIdAndLogin(id int64, login string) error {
 
 	elem, ok := a.db.Query("users").Where("login", reindexer.EQ, login).And().Where("id", reindexer.EQ, id).GetJson()
 	if !ok {
-		return fmt.Errorf("no users with login: %s", login)
+		return model.UserItem{}, fmt.Errorf("no users with login: %s", login)
 	}
 
 	var user model.UserItem
 
 	if err = json.Unmarshal(elem, &user); err != nil {
-		return err
+		return model.UserItem{}, err
 	}
 
-	return nil
+	return user, nil
 }
 
 func (a *UserApiImpl) VerificationCode(email string) (model.EmailItem, error) {

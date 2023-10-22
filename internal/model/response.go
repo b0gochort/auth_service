@@ -14,7 +14,7 @@ type User struct {
 	Surname       string          `json:"surname"`
 	Patronymic    string          `json:"patronymic"`
 	Email         string          `json:"email"`
-	Authenticated bool            `json:"authenticated"`
+	Authenticated int32           `json:"authenticated"`
 	Login         string          `json:"login"`
 	Password      string          `json:"password"`
 	IP            string          `json:"ip"`
@@ -36,9 +36,7 @@ type Token struct {
 
 type Auth struct {
 	AccessToken string `json:"accessToken"`
-	Id          int64  `json:"id"`
-	Login       string `json:"login"`
-	Auht        bool   `json:"auth"`
+	User        User   `json: "user"`
 }
 
 type ResponseSuccess struct {

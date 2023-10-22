@@ -27,7 +27,7 @@ func main() {
 		SMTPPort string
 	}
 
-	db := reindexer.NewReindex("cproto://rx.web-gen.ru:6534/tinkoff")
+	db := reindexer.NewReindex("cproto://127.0.0.1:6534:6534/tinkoff")
 	if db.Status().Err != nil {
 		panic(db.Status().Err)
 	}
@@ -45,7 +45,7 @@ func main() {
 	// Слушаем порт 8080 и обрабатываем запросы
 
 	fmt.Println("ok")
-	err := server.ListenAndServe(":8080")
+	err := server.ListenAndServe(":3305")
 	if err != nil {
 		fmt.Println("Ошибка при запуске сервера:", err)
 	}
