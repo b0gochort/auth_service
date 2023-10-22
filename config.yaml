@@ -1,0 +1,5 @@
+email:
+  from: devops@web-gen.ru
+  pass: kuwjjqbxuwmtcwvi
+  smtp_host: smtp.yandex.ru
+  smtp_port: 465
