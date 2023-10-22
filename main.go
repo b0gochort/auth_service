@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
+
+	"github.com/spf13/viper"
 
 	apidb "github.com/b0gochort/internal/api_db"
 	"github.com/b0gochort/internal/handler"
@@ -27,7 +28,8 @@ func main() {
 		SMTPPort string
 	}
 
-	db := reindexer.NewReindex("cproto://127.0.0.1:6534:6534/tinkoff")
+	db := reindexer.NewReindex("cproto://127.0.0.1:6534/tinkoff")
+
 	if db.Status().Err != nil {
 		panic(db.Status().Err)
 	}
