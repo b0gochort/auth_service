@@ -29,6 +29,7 @@ func main() {
 	}
 
 	db := reindexer.NewReindex("cproto://127.0.0.1:6534/tinkoff")
+
 	if db.Status().Err != nil {
 		panic(db.Status().Err)
 	}

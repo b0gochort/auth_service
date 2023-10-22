@@ -141,9 +141,6 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 	}
 
 	if err := h.services.CheckUserAuth(user.Email); err != nil {
-		auth := model.Auth{
-			Auht: false,
-		}
 		user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
 
 		geo, err := getGeo(user.IP)
@@ -169,7 +166,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 		user.Date.Create = time.Now().Unix()
 		user.Date.Update = time.Now().Unix()
 
-		auth, err = h.services.FindUser(user)
+		auth, err := h.services.FindUser(user)
 		if err != nil {
 			slog.Info("handler.services.Login: %s", err.Error())
 			response := model.ResponseError{
@@ -205,9 +202,6 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 
 		return
 	}
-	auth := model.Auth{
-		Auht: true,
-	}
 	user.IP = string(ctx.Request.Header.Peek("x-forwarded-for"))
 
 	geo, err := getGeo(user.IP)
@@ -233,7 +227,7 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 	user.Date.Create = time.Now().Unix()
 	user.Date.Update = time.Now().Unix()
 
-	auth, err = h.services.FindUser(user)
+	auth, err := h.services.FindUser(user)
 	if err != nil {
 		slog.Info("handler.services.Login: %s", err.Error())
 		response := model.ResponseError{
@@ -313,14 +307,15 @@ func (h *Handler) AuthMiddleware(ctx *fasthttp.RequestCtx, start time.Time) {
 		return
 	}
 
-	if err = h.services.UserService.UserExists(claims.Id, claims.Login); err != nil {
+	user, err := h.services.UserService.UserExists(claims.Id, claims.Login)
+	if err != nil {
 		slog.Info("handler.AuthMiddleware: ", err.Error())
 		ctx.Error(fmt.Sprintf("handler.AuthMiddleware.UserExists: %s", err.Error()), fasthttp.StatusInternalServerError)
 	}
 
 	response := model.ResponseSuccess{
 		Code:   fasthttp.StatusOK,
-		Result: "success",
+		Result: user,
 		Time:   time.Since(start).Nanoseconds(),
 	}
 

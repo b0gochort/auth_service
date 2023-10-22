@@ -55,12 +55,12 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 		Position:   userReq.Position,
 	}
 
-	userId, err := s.userApiDb.CreateUser(user)
+	user, err := s.userApiDb.CreateUser(user)
 	if err != nil {
 		slog.Info("userService.SignUp.CreateUser: %s", err.Error())
 		return model.Auth{}, fmt.Errorf("userService.SignUp.CreateUser: %s", err.Error())
 	}
-	token, err := pkg.GenerateToken(userReq.Login, userId, time.Hour*8)
+	token, err := pkg.GenerateToken(userReq.Login, user.ID, time.Hour*8)
 	if err != nil {
 		slog.Info("userService.SignUp.GenerateToken: %s", err.Error())
 		return model.Auth{}, fmt.Errorf("userService.SignUp.GenerateToken: %s", err.Error())
@@ -68,13 +68,26 @@ func (s *UserServiceImpl) SignUp(userReq model.User) (model.Auth, error) {
 
 	return model.Auth{
 		AccessToken: token,
-		Id:          userId,
-		Login:       userReq.Login,
+		User: model.User{
+			ID:            user.ID,
+			Name:          user.Name,
+			Surname:       user.Surname,
+			Patronymic:    user.Patronymic,
+			Email:         user.Email,
+			Authenticated: user.Authenticated,
+			Login:         user.Login,
+			Password:      user.Password,
+			IP:            user.IP,
+			Birthday:      user.Birthday,
+			City:          user.City,
+			Position:      user.Position,
+			Date:          user.Date,
+		},
 	}, nil
 }
 
 func (s *UserServiceImpl) FindUser(userReq model.User) (model.Auth, error) {
-	user, err := s.userApiDb.GetUser(userReq.Email, userReq.Login, generatePasswordHash(userReq.Password))
+	user, err := s.userApiDb.GetUser(userReq.Email, generatePasswordHash(userReq.Password), userReq.Login)
 	if err != nil {
 		slog.Info("userService.Login.FindUser: %s", err.Error())
 		return model.Auth{}, err
@@ -107,8 +120,21 @@ func (s *UserServiceImpl) FindUser(userReq model.User) (model.Auth, error) {
 
 	return model.Auth{
 		AccessToken: token,
-		Id:          user.ID,
-		Login:       user.Login,
+		User: model.User{
+			ID:            user.ID,
+			Name:          user.Name,
+			Surname:       user.Surname,
+			Patronymic:    user.Patronymic,
+			Email:         user.Email,
+			Authenticated: user.Authenticated,
+			Login:         user.Login,
+			Password:      user.Password,
+			IP:            user.IP,
+			Birthday:      user.Birthday,
+			City:          user.City,
+			Position:      user.Position,
+			Date:          user.Date,
+		},
 	}, nil
 }
 
@@ -165,13 +191,28 @@ func (s UserServiceImpl) VerificateEmailCode(code, email string) error {
 	return nil
 }
 
-func (s *UserServiceImpl) UserExists(userId int64, login string) error {
-	if err := s.userApiDb.GetUserByIdAndLogin(userId, login); err != nil {
+func (s *UserServiceImpl) UserExists(userId int64, login string) (model.User, error) {
+	user, err := s.userApiDb.GetUserByIdAndLogin(userId, login)
+	if err != nil {
 		slog.Info("userService.AuthMiddleware.FindUserByIdAndLogin: %s", err.Error())
-		return fmt.Errorf("userService.Login.AuthMiddleware: %s", err.Error())
+		return model.User{}, fmt.Errorf("userService.Login.AuthMiddleware: %s", err.Error())
 	}
 
-	return nil
+	return model.User{
+		ID:            user.ID,
+		Name:          user.Name,
+		Surname:       user.Surname,
+		Patronymic:    user.Patronymic,
+		Email:         user.Email,
+		Authenticated: user.Authenticated,
+		Login:         user.Login,
+		Password:      user.Password,
+		IP:            user.IP,
+		Birthday:      user.Birthday,
+		City:          user.City,
+		Position:      user.Position,
+		Date:          user.Date,
+	}, nil
 }
 
 func (s *UserServiceImpl) CheckUserAuth(email string) error {
