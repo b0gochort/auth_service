@@ -13,8 +13,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-var db = reindexer.NewReindex("cproto://rx.web-gen.ru:6534/tinkoff")
-
 func main() {
 
 	viper.SetConfigFile("./config.yaml")

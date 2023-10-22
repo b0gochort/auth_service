@@ -39,7 +39,8 @@ func (a *UserApiImpl) CreateUser(user model.UserItem) (int64, error) {
 
 func (a *UserApiImpl) GetUser(email, password string) (model.UserItem, error) {
 	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
-	if err != nil {
+
+	if err != nil && err.Error() != "rq: Namespace is already exists" {
 		log.Fatal(err)
 	}
 
@@ -57,7 +58,7 @@ func (a *UserApiImpl) GetUser(email, password string) (model.UserItem, error) {
 	return user, nil
 }
 
-func (a *UserApiImpl) UpdateUser(user model.UserItem) (model.UserItem, error) {
+func (a *UserApiImpl) UpdateUser(user model.UserItem) error {
 	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
 	if err != nil {
 		log.Fatal(err)
@@ -66,7 +67,7 @@ func (a *UserApiImpl) UpdateUser(user model.UserItem) (model.UserItem, error) {
 	elem := a.db.Query("users").Where("id", reindexer.EQ, user.ID).And().Update()
 
 	if elem.Error() != nil {
-		return model.UserItem{}, fmt.Errorf("faild update", elem.Error())
+		return fmt.Errorf("faild update", elem.Error())
 	}
 
 	return nil
@@ -147,7 +148,7 @@ func (a *UserApiImpl) SetAuth(email string) error {
 }
 
 func (a *UserApiImpl) CheckAuth(email string) (model.UserItem, error) {
-	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.EmailItem{})
+	err := a.db.OpenNamespace("users", reindexer.DefaultNamespaceOptions(), model.UserItem{})
 	if err != nil {
 		log.Fatal(err)
 	}
