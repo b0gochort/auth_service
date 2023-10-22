@@ -202,6 +202,8 @@ func (h *Handler) Login(ctx *fasthttp.RequestCtx, start time.Time) {
 		}
 
 		ctx.Write(body)
+
+		return
 	}
 	auth := model.Auth{
 		Auht: true,
